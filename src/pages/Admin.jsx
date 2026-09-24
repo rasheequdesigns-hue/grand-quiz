@@ -36,7 +36,7 @@ export default function Admin() {
 
   const handleLogin = (e) => {
     e.preventDefault()
-    if (password === 'admin123') {
+    if (password === 'Uvais8893') {
       setIsAuthenticated(true)
       // loadData is triggered via useEffect below when isAuthenticated becomes true
     } else {
