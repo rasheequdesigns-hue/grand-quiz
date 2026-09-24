@@ -86,7 +86,7 @@ export default function Admin() {
       const payload = {
         record_type: 'setting', 
         duration_minutes: duration, 
-        active_until: activeUntil, 
+        active_until: activeUntil ? new Date(activeUntil).toISOString() : null,
         name: quizName,
         question_text: certUrl,
         option_a: certX.toString(),
@@ -225,6 +225,14 @@ export default function Admin() {
 
   const deleteQuestion = async (id) => {
     if (window.confirm('Delete this question?')) {
+      await supabase.from('granddb').delete().eq('id', id)
+      loadData()
+    }
+  }
+
+  const deleteParticipant = async (id) => {
+    if (window.confirm('Delete this participant and all their answers?')) {
+      await supabase.from('granddb').delete().eq('record_type', 'answer').eq('participant_id', id)
       await supabase.from('granddb').delete().eq('id', id)
       loadData()
     }
@@ -601,8 +609,11 @@ export default function Admin() {
                         <td className="py-4 px-6 font-bold text-slate-700">{p.accuracy}%</td>
                         <td className="py-4 px-6 text-center font-semibold text-slate-600">{p.quizzes}</td>
                         <td className="py-4 px-6 text-center">
-                          <button className="bg-emerald-50 text-brand-green hover:bg-emerald-100 border border-emerald-200 px-4 py-1.5 rounded-full text-xs font-bold transition-colors">
+                          <button className="bg-emerald-50 text-brand-green hover:bg-emerald-100 border border-emerald-200 px-4 py-1.5 rounded-full text-xs font-bold transition-colors mr-2" onClick={() => {}}>
                             Inspect
+                          </button>
+                          <button onClick={() => deleteParticipant(p.id)} className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-4 py-1.5 rounded-full text-xs font-bold transition-colors">
+                            Delete
                           </button>
                         </td>
                       </tr>
