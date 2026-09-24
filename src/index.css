@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-green: #059669; /* Emerald Green */
+  --color-brand-gold: #d97706;  /* Gold/Amber */
+  --color-brand-white: #f8fafc; /* Soft Off-White */
+  --color-slate-50: #f8fafc;
+  --font-malayalam: "Manjari", "Meera Inimai", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-gray-900 font-sans;
+  }
+}
