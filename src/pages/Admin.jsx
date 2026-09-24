@@ -32,40 +32,57 @@ export default function Admin() {
 
   const [participants, setParticipants] = useState([])
   const [answers, setAnswers] = useState([])
+  const [dataLoading, setDataLoading] = useState(false)
 
   const handleLogin = (e) => {
     e.preventDefault()
     if (password === 'admin123') {
       setIsAuthenticated(true)
-      loadData()
+      // loadData is triggered via useEffect below when isAuthenticated becomes true
     } else {
       alert('Incorrect password')
     }
   }
 
+  // Trigger data load once authenticated
+  useEffect(() => {
+    if (isAuthenticated) loadData()
+  }, [isAuthenticated])
+
   const loadData = async () => {
-    const { data: sData } = await supabase.from('granddb').select('*').eq('record_type', 'setting').single()
-    if (sData) {
-      setSetting(sData)
-      setDuration(sData.duration_minutes || 30)
-      setQuizName(sData.name || '')
-      setCertUrl(sData.question_text || '')
-      setCertX(sData.option_a ? Number(sData.option_a) : 50)
-      setCertY(sData.option_b ? Number(sData.option_b) : 50)
-      setCertFontSize(sData.option_c ? Number(sData.option_c) : 40)
-      setCertColor(sData.option_d || '#000000')
-      if (sData.active_until) {
-        const date = new Date(sData.active_until)
-        date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
-        setActiveUntil(date.toISOString().slice(0, 16))
+    setDataLoading(true)
+    try {
+      const { data: sData } = await supabase.from('granddb').select('*').eq('record_type', 'setting').single()
+      if (sData) {
+        setSetting(sData)
+        setDuration(sData.duration_minutes || 30)
+        setQuizName(sData.name || '')
+        setCertUrl(sData.question_text || '')
+        setCertX(sData.option_a ? Number(sData.option_a) : 50)
+        setCertY(sData.option_b ? Number(sData.option_b) : 50)
+        setCertFontSize(sData.option_c ? Number(sData.option_c) : 40)
+        setCertColor(sData.option_d || '#000000')
+        if (sData.active_until) {
+          const date = new Date(sData.active_until)
+          date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
+          setActiveUntil(date.toISOString().slice(0, 16))
+        }
       }
+
+      const { data: qData, error: qErr } = await supabase.from('granddb').select('*').eq('record_type', 'question').order('id', { ascending: true })
+      if (qErr) console.error('Questions fetch error:', qErr)
+      setQuestions(qData || [])
+
+      const { data: pData, error: pErr } = await supabase.from('granddb').select('*').eq('record_type', 'participant').order('start_time', { ascending: false })
+      if (pErr) console.error('Participants fetch error:', pErr)
+      setParticipants(pData || [])
+
+      const { data: aData, error: aErr } = await supabase.from('granddb').select('*').eq('record_type', 'answer')
+      if (aErr) console.error('Answers fetch error:', aErr)
+      setAnswers(aData || [])
+    } finally {
+      setDataLoading(false)
     }
-    const { data: qData } = await supabase.from('granddb').select('*').eq('record_type', 'question').order('id', { ascending: true })
-    setQuestions(qData || [])
-    const { data: pData } = await supabase.from('granddb').select('*').eq('record_type', 'participant').order('start_time', { ascending: false })
-    setParticipants(pData || [])
-    const { data: aData } = await supabase.from('granddb').select('*').eq('record_type', 'answer')
-    setAnswers(aData || [])
   }
 
   const setDeadlineByHours = () => {
