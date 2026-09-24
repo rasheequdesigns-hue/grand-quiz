@@ -191,13 +191,7 @@ export default function Home() {
             >
               {loading ? 'Processing...' : 'Attempt Selected Quiz →'}
             </button>
-            <button
-              type="button"
-              className="flex-1 bg-amber-100/60 hover:bg-amber-100 text-amber-900 border border-amber-200 font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-2 transition-all"
-            >
-              <User className="w-5 h-5" />
-              View My Full Profile
-            </button>
+
           </div>
         </form>
       </div>
