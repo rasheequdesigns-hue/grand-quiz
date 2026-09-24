@@ -15,7 +15,7 @@ export default function Home() {
     async function fetchSettings() {
       const { data, error } = await supabase
         .from('granddb')
-        .select('*')
+        .select('name, active_until')
         .eq('record_type', 'setting')
         .single()
       
