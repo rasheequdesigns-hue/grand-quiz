@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import {
   Trash2, Plus, Settings as SettingsIcon, BookOpen,
   Trophy, Medal, Star, Upload, Image as ImageIcon, Edit,
-  ChevronDown, ChevronUp, Users
+  ChevronDown, ChevronUp, Users, X, CheckCircle, XCircle, Clock as ClockIcon
 } from 'lucide-react'
 
 export default function Admin() {
@@ -33,6 +33,7 @@ export default function Admin() {
   const [participants, setParticipants] = useState([])
   const [answers, setAnswers] = useState([])
   const [dataLoading, setDataLoading] = useState(false)
+  const [inspecting, setInspecting] = useState(null) // participant object being inspected
 
   const handleLogin = (e) => {
     e.preventDefault()
@@ -222,7 +223,17 @@ export default function Admin() {
     }
   }
 
-  const calculateScore = (pId) => {
+  const formatTimeTaken = (p) => {
+    if (!p.submit_time || !p.start_time) return 'N/A'
+    const ms = new Date(p.submit_time).getTime() - new Date(p.start_time).getTime()
+    if (ms <= 0) return 'N/A'
+    const totalSec = Math.floor(ms / 1000)
+    const m = Math.floor(totalSec / 60)
+    const s = totalSec % 60
+    return m + 'm ' + s + 's'
+  }
+
+    const calculateScore = (pId) => {
     const pAnswers = answers.filter(a => a.participant_id === pId)
     let score = 0
     pAnswers.forEach(ans => {
@@ -385,6 +396,12 @@ export default function Admin() {
                     </div>
                     <div className="flex px-4 py-2 gap-2">
                       <button
+                        onClick={() => setInspecting(p)}
+                        className="flex-1 py-2 text-xs font-bold rounded-xl bg-emerald-50 text-brand-green border border-emerald-100 active:bg-emerald-100 transition-colors"
+                      >
+                        View
+                      </button>
+                      <button
                         onClick={() => deleteParticipant(p.id)}
                         className="flex-1 py-2 text-xs font-bold rounded-xl bg-red-50 text-red-500 border border-red-100 active:bg-red-100 transition-colors"
                       >
@@ -418,6 +435,7 @@ export default function Admin() {
                         <th className="py-4 px-5 text-left">Phone</th>
                         <th className="py-4 px-5 text-left">Score</th>
                         <th className="py-4 px-5 text-left">Accuracy</th>
+                        <th className="py-4 px-5 text-left">Time Taken</th>
                         <th className="py-4 px-5 text-center">Actions</th>
                       </tr>
                     </thead>
@@ -431,7 +449,14 @@ export default function Admin() {
                           <td className="py-4 px-5 text-slate-500 text-sm">{p.phone}</td>
                           <td className="py-4 px-5 font-extrabold text-brand-green">{p.score} pts</td>
                           <td className="py-4 px-5 font-bold text-slate-700">{p.accuracy}%</td>
-                          <td className="py-4 px-5 text-center">
+                          <td className="py-4 px-5 text-sm font-semibold text-slate-500">{formatTimeTaken(p)}</td>
+                          <td className="py-4 px-5 text-center flex gap-2 justify-center">
+                            <button
+                              onClick={() => setInspecting(p)}
+                              className="bg-emerald-50 text-brand-green hover:bg-emerald-100 border border-emerald-200 px-4 py-1.5 rounded-full text-xs font-bold transition-colors"
+                            >
+                              View
+                            </button>
                             <button
                               onClick={() => deleteParticipant(p.id)}
                               className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-4 py-1.5 rounded-full text-xs font-bold transition-colors"
@@ -743,7 +768,78 @@ export default function Admin() {
 
       </div>
 
-      {/* ── Mobile bottom nav ── */}
+      {/* ── Inspect participant modal ── */}
+      {inspecting && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end md:items-center md:justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setInspecting(null)} />
+          <div className="relative bg-white rounded-t-3xl md:rounded-2xl w-full md:max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
+            {/* Handle */}
+            <div className="flex justify-center pt-3 pb-1 md:hidden">
+              <div className="w-10 h-1 bg-slate-200 rounded-full" />
+            </div>
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-slate-800 text-base">{inspecting.name}</h3>
+                <div className="flex items-center gap-3 mt-1 flex-wrap">
+                  <span className="text-xs text-slate-400">{inspecting.phone}</span>
+                  <span className="text-xs font-bold text-brand-green bg-emerald-50 px-2 py-0.5 rounded-full">
+                    {calculateScore(inspecting.id)} / {questions.length} correct
+                  </span>
+                  <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <ClockIcon size={10} /> {formatTimeTaken(inspecting)}
+                  </span>
+                  {inspecting.submitted
+                    ? <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Submitted</span>
+                    : <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">In Progress</span>
+                  }
+                </div>
+              </div>
+              <button onClick={() => setInspecting(null)} className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 flex-shrink-0 ml-3">
+                <X size={16} className="text-slate-600" />
+              </button>
+            </div>
+            {/* Answer list */}
+            <div className="overflow-y-auto p-4 space-y-3">
+              {questions.map((q, idx) => {
+                const pAnswer = answers.find(a => a.participant_id === inspecting.id && a.question_id === q.id)
+                const selected = pAnswer?.selected_option
+                const isCorrect = selected === q.correct_option
+                const notAnswered = !selected
+                return (
+                  <div key={q.id} className={"rounded-2xl border overflow-hidden " + (notAnswered ? 'border-slate-200' : isCorrect ? 'border-emerald-200' : 'border-red-200')}>
+                    <div className={"px-4 py-3 flex items-start gap-3 " + (notAnswered ? 'bg-slate-50' : isCorrect ? 'bg-emerald-50' : 'bg-red-50')}>
+                      <span className="text-xs font-extrabold text-brand-gold mt-0.5 flex-shrink-0">Q{idx + 1}</span>
+                      <p className="text-sm font-semibold text-slate-800 flex-1 leading-snug">{q.question_text}</p>
+                      {notAnswered
+                        ? <span className="text-xs font-bold text-slate-400 flex-shrink-0">—</span>
+                        : isCorrect
+                        ? <CheckCircle size={18} className="text-emerald-500 flex-shrink-0 mt-0.5" />
+                        : <XCircle size={18} className="text-red-400 flex-shrink-0 mt-0.5" />
+                      }
+                    </div>
+                    <div className="grid grid-cols-2 gap-px bg-slate-100">
+                      {['A','B','C','D'].map(opt => (
+                        <div key={opt} className={"px-3 py-2 text-xs " + (opt === q.correct_option ? 'bg-emerald-100 text-emerald-800 font-bold' : opt === selected && !isCorrect ? 'bg-red-100 text-red-700 font-bold' : 'bg-white text-slate-500')}>
+                          <span className="font-extrabold mr-1 text-brand-gold">{opt}.</span>
+                          {q['option_' + opt.toLowerCase()]}
+                          {opt === q.correct_option && <span className="ml-1 text-emerald-600">✓</span>}
+                          {opt === selected && !isCorrect && <span className="ml-1 text-red-500">✗</span>}
+                        </div>
+                      ))}
+                    </div>
+                    {notAnswered && (
+                      <div className="px-4 py-2 bg-white text-xs text-slate-400 italic">Not answered</div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+            {/* ── Mobile bottom nav ── */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 flex">
         {tabs.map(t => (
           <button

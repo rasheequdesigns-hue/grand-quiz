@@ -99,7 +99,7 @@ export default function Quiz() {
   const handleAutoSubmit = async (pId) => {
     if (submitting) return
     setSubmitting(true)
-    await supabase.from('granddb').update({ submitted: true }).eq('id', pId)
+    await supabase.from('granddb').update({ submitted: true, submit_time: new Date().toISOString() }).eq('id', pId)
     navigate('/certificate')
   }
 
